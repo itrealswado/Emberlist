@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMBERLIST — Competitive PvP Rankings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b0d;
+  --panel:#131519;
+  --panel-alt:#191c21;
+  --panel-raise:#1e2127;
+  --line:#24272e;
+  --line-soft:#1b1e24;
+  --text:#e9eaed;
+  --text-dim:#8b9099;
+  --text-faint:#565b64;
+  --ember:#ff5a2e;
+
+  --t-ht1:#fff1c9;
+  --t-lt1:#ffc94d;
+  --t-ht2:#ff9d4d;
+  --t-lt2:#ff7a3d;
+  --t-ht3:#ff5a2e;
+  --t-lt3:#dd423c;
+  --t-ht4:#a6396a;
+  --t-lt4:#6a4a9c;
+  --t-ht5:#465a9e;
+  --t-lt5:#374d6c;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;}
+::selection{background:var(--ember); color:#0a0b0d;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; cursor:pointer; color:inherit;}
+input{font-family:inherit;}
+img{image-rendering:pixelated;}
+
+/* ---------- shell ---------- */
+#app{max-width:1180px; margin:0 auto; padding:0 24px 70px;}
+
+.topbar{position:sticky; top:0; z-index:60; background:rgba(10,11,13,0.94); backdrop-filter:blur(10px); border-bottom:1px solid var(--line-soft);}
+.topbar-inner{max-width:1180px; margin:0 auto; padding:16px 24px 0;}
+.topbar-row1{display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:14px;}
+.brand{display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0;}
+.brand-mark{width:26px; height:26px; border-radius:3px; background:linear-gradient(155deg, var(--t-ht1), var(--ember) 55%, var(--t-lt5)); flex-shrink:0;}
+.brand-name{font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:19px; letter-spacing:0.5px; line-height:1;}
+.brand-name span{color:var(--ember);}
+
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.search-box{position:relative;}
+.search-box input{
+  background:var(--panel-alt); border:1px solid var(--line); border-radius:5px;
+  padding:8px 12px 8px 30px; color:var(--text); font-size:12.5px; width:170px; outline:none;
+  transition:border-color .15s ease, width .2s ease;
+}
+.search-box input:focus{border-color:var(--ember); width:210px;}
+.search-box svg{position:absolute; left:9px; top:50%; transform:translateY(-50%); width:13px; height:13px; color:var(--text-faint); pointer-events:none;}
+.info-btn{
+  background:var(--panel-alt); border:1px solid var(--line); border-radius:5px; padding:8px 12px;
+  font-size:12.5px; font-weight:600; display:flex; align-items:center; gap:6px; color:var(--text-dim);
+  transition:border-color .15s ease, color .15s ease;
+}
+.info-btn:hover{border-color:var(--text-faint); color:var(--text);}
+.info-btn svg{width:13px; height:13px;}
+.server-chip{
+  display:flex; align-items:center; gap:8px; background:var(--panel-alt); border:1px solid var(--line);
+  border-radius:5px; padding:6px 12px 6px 6px;
+}
+.server-chip .mark{width:22px; height:22px; border-radius:4px; background:linear-gradient(155deg,var(--t-ht1),var(--ember)); flex-shrink:0;}
+.server-chip .label{font-size:8.5px; letter-spacing:1px; color:var(--text-faint); text-transform:uppercase; line-height:1;}
+.server-chip .ip{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; line-height:1.3;}
+
+.tabs{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none; padding-bottom:0;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{
+  display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 16px 12px;
+  color:var(--text-faint); border-bottom:2px solid transparent; white-space:nowrap; flex-shrink:0;
+  transition:color .15s ease;
+}
+.tab svg{width:19px; height:19px;}
+.tab span{font-size:12px; font-weight:600; letter-spacing:0.2px;}
+.tab:hover{color:var(--text-dim);}
+.tab.active{color:var(--tab-color, var(--ember)); border-bottom-color:var(--tab-color, var(--ember));}
+
+.spectrum{height:3px; width:100%; background:linear-gradient(90deg, var(--t-ht1),var(--t-lt1),var(--t-ht2),var(--t-lt2),var(--t-ht3),var(--t-lt3),var(--t-ht4),var(--t-lt4),var(--t-ht5),var(--t-lt5));}
+
+/* ---------- page head ---------- */
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:28px 0 20px;}
+.page-head h1{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:34px; text-transform:uppercase; line-height:1; display:flex; align-items:center; gap:12px;}
+.page-head-icon{width:36px; height:36px; border-radius:6px; background:var(--panel); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--tab-color,var(--ember));}
+.page-head-icon svg{width:19px; height:19px;}
+.page-head p{color:var(--text-faint); font-size:12.5px; margin-top:5px;}
+.page-head-stats{display:flex; gap:22px;}
+.phs b{font-family:'Big Shoulders Display',sans-serif; font-size:22px; font-weight:800; display:block; line-height:1;}
+.phs span{color:var(--text-faint); font-size:10px; letter-spacing:0.8px; text-transform:uppercase;}
+
+/* ---------- table ---------- */
+.board{background:var(--panel); border:1px solid var(--line); border-radius:7px; overflow:hidden;}
+.board-head{
+  display:grid; padding:12px 18px; background:var(--panel-alt); border-bottom:1px solid var(--line);
+  font-size:10px; text-transform:uppercase; letter-spacing:0.9px; color:var(--text-faint); font-weight:700;
+}
+.board-head.overall-cols{grid-template-columns:44px 1fr 66px minmax(280px,1fr) 84px;}
+.board-head.mode-cols{grid-template-columns:44px 1fr 66px 90px 100px 130px 70px;}
+.board-head > div:last-child{text-align:right;}
+
+.row{
+  display:grid; align-items:center; padding:11px 18px; border-bottom:1px solid var(--line-soft);
+  cursor:pointer; transition:background .12s ease;
+}
+.row.overall-cols{grid-template-columns:44px 1fr 66px minmax(280px,1fr) 84px;}
+.row.mode-cols{grid-template-columns:44px 1fr 66px 90px 100px 130px 70px;}
+.row:last-child{border-bottom:none;}
+.row:hover{background:var(--panel-alt);}
+
+.medal{
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:15px; color:var(--text-dim);
+  clip-path:polygon(15% 0,100% 0,85% 100%,0 100%); background:var(--panel-raise);
+}
+.medal.r1{background:linear-gradient(155deg,var(--t-ht1),#c99a2e); color:#2a1c00;}
+.medal.r2{background:linear-gradient(155deg,#d7dbe2,#8b95a3); color:#12141a;}
+.medal.r3{background:linear-gradient(155deg,var(--t-ht2),#a35322); color:#2a1200;}
+
+.player-col{display:flex; align-items:center; gap:11px; min-width:0;}
+.avatar{width:34px; height:34px; border-radius:5px; background:var(--panel-raise); flex-shrink:0; object-fit:cover;}
+.player-text{min-width:0;}
+.player-name{font-weight:700; font-size:14px; line-height:1.25;}
+.player-rank-title{display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-faint); margin-top:1px;}
+.player-rank-title svg{width:10px; height:10px; flex-shrink:0;}
+.player-rank-title b{color:var(--rt-color,var(--text-dim)); font-weight:600;}
+.player-rank-title .pts{color:var(--text-faint);}
+
+.region-badge{
+  font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:0.4px;
+  padding:3px 7px; border-radius:3px; background:var(--panel-raise); color:var(--text-dim);
+  border:1px solid var(--line); width:fit-content;
+}
+
+.tierline{display:flex; gap:6px; flex-wrap:wrap;}
+.chip{display:flex; flex-direction:column; align-items:center; gap:3px; width:32px; flex-shrink:0;}
+.chip-icon{width:26px; height:26px; border-radius:5px; background:var(--panel-raise); border:1.4px solid var(--chip-tier-color,var(--line)); display:flex; align-items:center; justify-content:center; color:var(--chip-mode-color,var(--text-dim));}
+.chip-icon svg{width:13px; height:13px;}
+.chip-tier{font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; color:var(--chip-tier-color,var(--text-faint));}
+
+.tier{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:11.5px; padding:4px 9px; border-radius:4px; letter-spacing:0.3px; width:fit-content; border:1px solid var(--tc,var(--line));}
+.rating-col{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13.5px;}
+.record-col{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--text-dim);}
+.record-col .w{color:#8fd4a8;} .record-col .l{color:#e0857f;}
+.trend-col{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12.5px;}
+.trend-up{color:#8fd4a8;} .trend-down{color:#e0857f;} .trend-flat{color:var(--text-faint);}
+.points-col{text-align:right; font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px;}
+.points-col span{display:block; font-family:'Inter',sans-serif; font-weight:500; font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px;}
+
+.empty-state{padding:60px 20px; text-align:center; color:var(--text-faint); font-size:13px;}
+
+.foot{border-top:1px solid var(--line-soft); margin-top:36px; padding-top:22px; color:var(--text-faint); font-size:11.5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+/* ---------- modal ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(6,7,9,0.72); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; z-index:100; padding:20px;
+  opacity:0; pointer-events:none; transition:opacity .15s ease;
+}
+.overlay.open{opacity:1; pointer-events:auto;}
+.modal{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; width:100%; max-width:400px;
+  padding:28px; position:relative; transform:translateY(8px); transition:transform .15s ease;
+  max-height:86vh; overflow-y:auto;
+}
+.overlay.open .modal{transform:translateY(0);}
+.modal-close{position:absolute; top:16px; right:16px; width:28px; height:28px; border-radius:50%; background:var(--panel-alt); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--text-dim);}
+.modal-close:hover{color:var(--text);}
+.modal-close svg{width:13px; height:13px;}
+.modal-top{display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; margin-bottom:22px;}
+.modal-avatar{width:76px; height:76px; border-radius:10px; border:2px solid var(--ring,var(--ember)); background:var(--panel-raise);}
+.modal-name{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:26px; text-transform:uppercase;}
+.modal-rank-title{display:flex; align-items:center; gap:6px; padding:6px 13px; border-radius:20px; background:var(--panel-alt); border:1px solid var(--line); font-size:12.5px; font-weight:700;}
+.modal-rank-title svg{width:12px; height:12px;}
+.modal-region{color:var(--text-faint); font-size:12px;}
+.modal-section{margin-bottom:18px;}
+.modal-section h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); margin-bottom:10px; font-weight:700;}
+.modal-position{display:flex; align-items:center; gap:12px; background:var(--panel-alt); border:1px solid var(--line); border-radius:6px; padding:12px 14px;}
+.modal-position .pos-rank{font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:22px;}
+.modal-position .pos-label{font-size:12.5px; font-weight:600;}
+.modal-position .pos-sub{font-size:11px; color:var(--text-faint);}
+.modal-tiers{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.modal-tier-item{
+  display:flex; align-items:center; gap:9px; background:var(--panel-alt); border:1px solid var(--line);
+  border-radius:6px; padding:9px 10px; cursor:pointer; transition:border-color .15s ease;
+}
+.modal-tier-item:hover{border-color:var(--text-faint);}
+.mti-icon{width:24px; height:24px; border-radius:5px; background:var(--panel-raise); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.mti-icon svg{width:12px; height:12px;}
+.mti-text{min-width:0;}
+.mti-mode{font-size:10.5px; color:var(--text-faint); line-height:1.2;}
+.mti-tier{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px;}
+
+@media (max-width:760px){
+  .board-head.overall-cols, .row.overall-cols{grid-template-columns:34px 1fr 50px; }
+  .board-head.overall-cols div:nth-child(4), .row.overall-cols .tierline-col,
+  .board-head.overall-cols div:nth-child(5), .row.overall-cols .points-col{display:none;}
+  .board-head.mode-cols, .row.mode-cols{grid-template-columns:34px 1fr 60px 80px;}
+  .board-head.mode-cols div:nth-child(5), .row.mode-cols .record-col,
+  .board-head.mode-cols div:nth-child(6), .row.mode-cols .trend-col{display:none;}
+  .server-chip .label, .server-chip .ip{display:none;}
+  .server-chip{padding:6px;}
+  .search-box input{width:120px;}
+  .search-box input:focus{width:140px;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row1">
+      <div class="brand" onclick="setTab('overall')">
+        <div class="brand-mark"></div>
+        <div class="brand-name">EMBER<span>LIST</span></div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="Search player" oninput="onSearch(this.value)">
+        </div>
+        <button class="info-btn" onclick="toggleInfo()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          Information
+        </button>
+        <div class="server-chip">
+          <div class="mark"></div>
+          <div>
+            <div class="label">Server IP</div>
+            <div class="ip">play.emberlist.gg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" id="tabsRow"></div>
+  </div>
+  <div class="spectrum"></div>
+</div>
+<div id="app"></div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const MODES = [
+  {id:'sword', name:'Sword', desc:'Competitive Sword PvP', color:'#ff5a2e', icon:'sword'},
+  {id:'axe', name:'Axe', desc:'Competitive Axe PvP', color:'#dd423c', icon:'axe'},
+  {id:'nethpot', name:'NethPot', desc:'Competitive NethPot PvP', color:'#a6396a', icon:'potion'},
+  {id:'diamondpot', name:'Diamond Pot', desc:'Competitive Diamond Pot PvP', color:'#465a9e', icon:'diamond'},
+  {id:'uhc', name:'UHC', desc:'Competitive UHC PvP', color:'#e0857f', icon:'heart'},
+  {id:'smp', name:'SMP', desc:'Competitive SMP PvP', color:'#8fd4a8', icon:'grass'},
+  {id:'crystal', name:'Crystal', desc:'Competitive Crystal PvP', color:'#6a4a9c', icon:'crystal'},
+  {id:'mace', name:'Mace', desc:'Competitive Mace PvP', color:'#ff9d4d', icon:'mace'},
+  {id:'cart', name:'Cart', desc:'Competitive Cart PvP', color:'#ffc94d', icon:'cart'},
+];
+const TABS = [{id:'overall', name:'Overall', desc:'Combined standing across every ranked mode', color:'#ff5a2e', icon:'crown'}, ...MODES];
+const TIERS = ['HT1','LT1','HT2','LT2','HT3','LT3','HT4','LT4','HT5','LT5'];
+const TIER_POINTS = {HT1:60,LT1:48,HT2:38,LT2:30,HT3:23,LT3:17,HT4:12,LT4:8,HT5:5,LT5:2};
+const REGIONS = ['NA','EU','ASIA','OCE','SA'];
+const NAMES = ['Swadzo','Nexor','Vexium','Kryox','Halven','Orinth','Zeph','Talveus','Mordax','Ryuke',
+  'Sable','Quorin','Ashwake','Draeven','Nulvex','Cindros','Vantik','Ferox','Ilyric','Thessal',
+  'Voskar','Embrune','Kaelith','Ravox','Sylvane','Drakmoor','Tenrith','Ozvane','Malkuri','Fennrick',
+  'Grimwick','Astrelle','Novarin','Cassiel','Wrenlock','Icarwyn','Duskmere','Brackis','Solvane','Yveris'];
+
+function seededRand(seed){ let s = seed % 2147483647; if (s<=0) s+=2147483646;
+  return function(){ s = s*16807 % 2147483647; return (s-1)/2147483646; }; }
+function tierFromRank(i, total){ const pct=i/total; return TIERS[Math.min(TIERS.length-1, Math.floor(pct*TIERS.length))]; }
+
+const LEADERBOARDS = {};
+const PLAYER_MODE_TABLE = {};
+NAMES.forEach(n => PLAYER_MODE_TABLE[n] = {});
+
+MODES.forEach((mode, mIdx) => {
+  const rand = seededRand(1000 + mIdx*77);
+  const pool = [...NAMES];
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const count = 20 + Math.floor(rand()*9);
+  const list = []; let rating = 2150 + Math.floor(rand()*60);
+  for(let i=0;i<count;i++){
+    rating -= Math.floor(6 + rand()*22);
+    const name = pool[i];
+    const tier = tierFromRank(i, count);
+    const wins = 60 + Math.floor(rand()*160);
+    const losses = 15 + Math.floor(rand()*100);
+    const troll = rand();
+    const trend = troll<0.35 ? {dir:'up', n:1+Math.floor(rand()*3)} : troll<0.6 ? {dir:'down', n:1+Math.floor(rand()*2)} : {dir:'flat'};
+    const region = REGIONS[Math.floor(rand()*REGIONS.length)];
+    list.push({rank:i+1, name, tier, rating, region, wins, losses, trend});
+    PLAYER_MODE_TABLE[name][mode.id] = {tier, rating, rank:i+1};
+  }
+  LEADERBOARDS[mode.id] = list;
+});
+
+function buildOverall(){
+  const rows = [];
+  NAMES.forEach(n=>{
+    const entries = PLAYER_MODE_TABLE[n];
+    const keys = Object.keys(entries);
+    if(!keys.length) return;
+    let score = 0; keys.forEach(k=>score += TIER_POINTS[entries[k].tier]);
+    const regionCount = {};
+    keys.forEach(k=>{ const r = LEADERBOARDS[k].find(p=>p.name===n).region; regionCount[r]=(regionCount[r]||0)+1; });
+    const region = Object.entries(regionCount).sort((a,b)=>b[1]-a[1])[0][0];
+    rows.push({name:n, score, region, modesPlayed:keys.length});
+  });
+  rows.sort((a,b)=>b.score-a.score);
+  rows.forEach((r,i)=>r.rank=i+1);
+  return rows;
+}
+const OVERALL = buildOverall();
+
+function rankTitle(score){
+  if(score>=380) return 'Ember Grandmaster';
+  if(score>=280) return 'Ember Master';
+  if(score>=200) return 'Ember Ace';
+  if(score>=130) return 'Ember Specialist';
+  if(score>=60) return 'Ember Adept';
+  return 'Ember Rookie';
+}
+function avatarUrl(name){ return `https://mc-heads.net/avatar/${encodeURIComponent(name)}/64`; }
+function tierColorVar(t){ return `var(--t-${t.toLowerCase()})`; }
+
+/* ================= ICONS ================= */
+const ICONS = {
+  sword:'<path d="M14 2 L20 8 L11 17 L9 19 L5 15 L7 13 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M5 15 L2.5 21.5 L9 19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  axe:'<path d="M15 3 C20 3 21 8 21 9 C18 10.5 15.5 10 13.5 8.5 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 9 L4 19 L6 21 L16 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  potion:'<path d="M10 2 H14 V6 L18 15 C19 18 17 21 14 21 H10 C7 21 5 18 6 15 L10 6 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 14 H16" stroke="currentColor" stroke-width="1.4"/>',
+  diamond:'<path d="M6 4 H18 L22 10 L12 22 L2 10 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M2 10 H22 M9 4 L6 10 L12 22 M15 4 L18 10 L12 22" stroke="currentColor" stroke-width="1"/>',
+  heart:'<path d="M12 21 C12 21 3 15 3 9 C3 6 5.5 4 8 4 C10 4 12 6 12 8 C12 6 14 4 16 4 C18.5 4 21 6 21 9 C21 15 12 21 12 21 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  grass:'<rect x="3" y="12" width="18" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12 L6 6 L9 12 M9 12 L12 5.5 L15 12 M15 12 L18 6.5 L21 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  crystal:'<path d="M12 2 L17 7 L17 15 L12 22 L7 15 L7 7 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 7 H17 M9 7 L12 22 M15 7 L12 22" stroke="currentColor" stroke-width="1"/>',
+  mace:'<circle cx="17" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M14 10 L5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15 4 L19 4 M15 10 L19 10 M12 5 L12 9 M22 5 L22 9" stroke="currentColor" stroke-width="1.3"/>',
+  cart:'<rect x="4" y="9" width="16" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="19" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="19" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 9 L6 4 H18 L20 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  crown:'<path d="M3 8 L7 12 L12 5 L17 12 L21 8 L19 18 H5 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  medal:'<circle cx="12" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 14 L7 21 L12 18 L17 21 L15 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+};
+function iconSvg(name){ return `<svg viewBox="0 0 24 24">${ICONS[name]||ICONS.sword}</svg>`; }
+
+/* ================= STATE ================= */
+let state = {tab:'overall', query:''};
+
+function setTab(tabId){ state.tab = tabId; render(); }
+function onSearch(v){ state.query = v.toLowerCase(); renderBoard(); }
+function toggleInfo(){
+  openModalRaw(`
+    <button class="modal-close" onclick="closeModal()">${iconSvg('crown').replace('crown','')}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div style="text-align:center;margin-bottom:18px;">
+      <div class="brand-mark" style="width:40px;height:40px;border-radius:8px;margin:0 auto 12px;"></div>
+      <div class="modal-name" style="font-size:22px;">How Emberlist works</div>
+    </div>
+    <div class="modal-section">
+      <h4>Tier system</h4>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">Every mode uses ten tiers, HT1 through LT5, ranked hottest to coldest: HT1 · LT1 · HT2 · LT2 · HT3 · LT3 · HT4 · LT4 · HT5 · LT5. HT1 is the top of the ladder in that mode.</p>
+    </div>
+    <div class="modal-section">
+      <h4>Overall standing</h4>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;">Overall points are earned per mode based on tier, then summed across every mode a player is ranked in. Higher tiers are worth more.</p>
+    </div>
+  `);
+}
+
+/* ---------- tabs ---------- */
+function renderTabs(){
+  document.getElementById('tabsRow').innerHTML = TABS.map(t=>`
+    <button class="tab ${t.id===state.tab?'active':''}" style="--tab-color:${t.color}" onclick="setTab('${t.id}')">
+      ${iconSvg(t.icon)}<span>${t.name}</span>
+    </button>`).join('');
+}
+
+/* ---------- page head + board ---------- */
+function currentRows(){
+  if(state.tab==='overall') return OVERALL;
+  return LEADERBOARDS[state.tab];
+}
+function filteredRows(){
+  const rows = currentRows();
+  if(!state.query) return rows;
+  return rows.filter(r=>r.name.toLowerCase().includes(state.query));
+}
+
+function tierChip(mode, tier){
+  return `<div class="chip" onclick="event.stopPropagation(); setTab('${mode.id}')" title="${mode.name}: ${tier}">
+    <div class="chip-icon" style="--chip-tier-color:${tierColorVar(tier)};--chip-mode-color:${mode.color}">${iconSvg(mode.icon)}</div>
+    <div class="chip-tier" style="--chip-tier-color:${tierColorVar(tier)};color:${tierColorVar(tier)}">${tier}</div>
+  </div>`;
+}
+function trendMarkup(t){
+  if(t.dir==='up') return `<span class="trend-up">↑${t.n}</span>`;
+  if(t.dir==='down') return `<span class="trend-down">↓${t.n}</span>`;
+  return `<span class="trend-flat">—</span>`;
+}
+function medalMarkup(rank){
+  const cls = rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
+  return `<div class="medal ${cls}">${rank}</div>`;
+}
+
+function renderBoard(){
+  const wrap = document.getElementById('boardWrap');
+  if(!wrap) return;
+  const rows = filteredRows();
+  const isOverall = state.tab==='overall';
+
+  if(!rows.length){
+    wrap.innerHTML = `<div class="board"><div class="empty-state">No players match “${state.query}”.</div></div>`;
+    return;
+  }
+
+  const head = isOverall
+    ? `<div class="board-head overall-cols"><div>#</div><div>Player</div><div>Region</div><div>Tiers</div><div style="text-align:right;">Points</div></div>`
+    : `<div class="board-head mode-cols"><div>#</div><div>Player</div><div>Region</div><div>Tier</div><div>Rating</div><div>Record</div><div style="text-align:right;">Trend</div></div>`;
+
+  const body = rows.map(r=>{
+    if(isOverall){
+      const chips = MODES.map(m=>{
+        const e = PLAYER_MODE_TABLE[r.name][m.id];
+        return e ? tierChip(m, e.tier) : '';
+      }).join('');
+      return `
+      <div class="row overall-cols" onclick="openPlayer('${r.name}')">
+        <div>${medalMarkup(r.rank)}</div>
+        <div class="player-col">
+          <img class="avatar" src="${avatarUrl(r.name)}" alt="">
+          <div class="player-text">
+            <div class="player-name">${r.name}</div>
+            <div class="player-rank-title">${iconSvg('medal')}<b>${rankTitle(r.score)}</b><span class="pts">(${r.score} pts)</span></div>
+          </div>
+        </div>
+        <div><span class="region-badge">${r.region}</span></div>
+        <div class="tierline tierline-col">${chips}</div>
+        <div class="points-col">${r.score}<span>points</span></div>
+      </div>`;
+    }
+    const mode = MODES.find(m=>m.id===state.tab);
+    return `
+    <div class="row mode-cols" onclick="openPlayer('${r.name}')">
+      <div>${medalMarkup(r.rank)}</div>
+      <div class="player-col">
+        <img class="avatar" src="${avatarUrl(r.name)}" alt="">
+        <div class="player-text">
+          <div class="player-name">${r.name}</div>
+          <div class="player-rank-title"><b style="--rt-color:${mode.color}">${mode.name}</b></div>
+        </div>
+      </div>
+      <div><span class="region-badge">${r.region}</span></div>
+      <div><span class="tier" style="--tc:${tierColorVar(r.tier)};color:${tierColorVar(r.tier)}">${r.tier}</span></div>
+      <div class="rating-col">${r.rating}</div>
+      <div class="record-col"><span class="w">${r.wins}W</span> <span class="l">${r.losses}L</span></div>
+      <div class="trend-col">${trendMarkup(r.trend)}</div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div class="board">${head}${body}</div>`;
+}
+
+function renderPageHead(){
+  const t = TABS.find(x=>x.id===state.tab);
+  const rows = currentRows();
+  const el = document.getElementById('pageHead');
+  if(state.tab==='overall'){
+    el.innerHTML = `
+    <div>
+      <h1><span class="page-head-icon" style="--tab-color:${t.color}">${iconSvg(t.icon)}</span>Overall</h1>
+      <p>${t.desc}</p>
+    </div>
+    <div class="page-head-stats">
+      <div class="phs"><b>${rows.length}</b><span>Ranked players</span></div>
+      <div class="phs"><b>${MODES.length}</b><span>Modes counted</span></div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `
+  <div>
+    <h1><span class="page-head-icon" style="--tab-color:${t.color}">${iconSvg(t.icon)}</span>${t.name}</h1>
+    <p>${t.desc}</p>
+  </div>
+  <div class="page-head-stats">
+    <div class="phs"><b>${rows.length}</b><span>Ranked players</span></div>
+    <div class="phs"><b>${rows[0].tier}</b><span>Top tier</span></div>
+  </div>`;
+}
+
+/* ---------- modal ---------- */
+function openModalRaw(html){
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+
+function openPlayer(name){
+  const entries = PLAYER_MODE_TABLE[name];
+  const overallRow = OVERALL.find(r=>r.name===name);
+  const region = overallRow ? overallRow.region : (Object.values(entries)[0] ? LEADERBOARDS[Object.keys(entries)[0]].find(p=>p.name===name).region : 'NA');
+  const title = rankTitle(overallRow ? overallRow.score : 0);
+
+  const positionHtml = state.tab==='overall'
+    ? `<div class="modal-position">
+        <div class="pos-rank">#${overallRow.rank}</div>
+        <div><div class="pos-label">Overall</div><div class="pos-sub">${overallRow.score} points across ${overallRow.modesPlayed} modes</div></div>
+      </div>`
+    : (()=>{
+        const mode = MODES.find(m=>m.id===state.tab);
+        const e = entries[state.tab];
+        return `<div class="modal-position">
+          <div class="pos-rank">#${e.rank}</div>
+          <div><div class="pos-label">${mode.name}</div><div class="pos-sub">${e.tier} · ${e.rating} rating</div></div>
+        </div>`;
+      })();
+
+  const tierItems = MODES.map(m=>{
+    const e = entries[m.id];
+    if(!e) return '';
+    return `<div class="modal-tier-item" onclick="closeModal(); setTab('${m.id}')">
+      <div class="mti-icon" style="color:${m.color}">${iconSvg(m.icon)}</div>
+      <div class="mti-text"><div class="mti-mode">${m.name}</div><div class="mti-tier" style="color:${tierColorVar(e.tier)}">${e.tier}</div></div>
+    </div>`;
+  }).join('');
+
+  openModalRaw(`
+    <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="modal-top">
+      <img class="modal-avatar" src="${avatarUrl(name)}" alt="" style="--ring:var(--t-${(overallRow?TIERS[0]:'lt5').toLowerCase()})">
+      <div class="modal-name">${name}</div>
+      <div class="modal-rank-title">${iconSvg('medal')}${title}</div>
+      <div class="modal-region">${region} region</div>
+    </div>
+    <div class="modal-section">
+      <h4>Position</h4>
+      ${positionHtml}
+    </div>
+    <div class="modal-section" style="margin-bottom:0;">
+      <h4>Tiers by mode</h4>
+      <div class="modal-tiers">${tierItems}</div>
+    </div>
+  `);
+}
+
+/* ---------- render root ---------- */
+function render(){
+  renderTabs();
+  const app = document.getElementById('app');
+  app.innerHTML = `<div class="page-head" id="pageHead"></div><div id="boardWrap"></div>
+  <div class="foot"><span>EMBERLIST — community-run competitive rankings</span><span>Ratings recalculated after every match</span></div>`;
+  renderPageHead();
+  renderBoard();
+}
+render();
+</script>
+</body>
+</html>
